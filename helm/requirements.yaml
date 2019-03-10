@@ -1,0 +1,7 @@
+dependencies:
+- name: redis
+  repository: "@stable"
+  version: 6.1.4
+  condition: redis.enabled
+  tags:
+  - redis

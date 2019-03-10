@@ -1,0 +1,10 @@
+{{- if .Values.helmChart.ingress.enabled }}
+You can access service via http://{{ .Values.helmChart.ingress.host }}
+{{- else }}
+You can access service via port forwarding:
+  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app={{ include "go-aviasales-task.name" . }},release={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
+  kubectl port-forward $POD_NAME 8080:http
+{{- end }}
+
+To retriev redis password run this command:
+  kubectl get secret --namespace {{ .Release.Namespace }} {{ .Chart.Name }}-redis-secret -o jsonpath={.data.redis-password} | base64 --decode; echo

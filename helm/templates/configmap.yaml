@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "go-aviasales-task.fullname" . }}
+  labels:
+    app: {{ .Chart.Name }}
+data:
+  configFile: |
+    {
+      "logger": {{ .Values.service.logger | toJson}},
+      "client": {
+        "host": {{ .Values.service.client.host | quote }},
+        "timeoutMs": {{ .Values.service.client.timeoutMs }}
+      },
+      "cache": {
+        "type": {{ .Values.service.cache.type | quote }},
+        {{- if eq .Values.service.cache.type "redis" }}
+        "maxIdle": {{ .Values.service.cache.maxIdle }},
+        {{- if and .Values.service.cache.host }}
+        "addr": {{ printf "redis://%s:%s" .Values.service.cache.host .Values.service.cache.port | quote }}
+        {{- else if .Values.redis.enabled }}
+        "addr": {{ printf "redis://%s-redis-master:%s" .Release.Name .Values.service.cache.port | quote }}
+        {{- end }}
+        {{- if .Values.service.cache.connectTimeoutMs }}
+        ,"connectTimeoutMs": {{ .Values.service.cache.connectTimeoutMs }}
+        {{- end }}
+        {{- if .Values.service.cache.database }}
+        ,"database": {{ .Values.service.cache.database }}
+        {{- end }}
+        {{- if .Values.service.cache.keepAliveMs }}
+        ,"keepAliveMs": {{ .Values.service.cache.keepAliveMs }}
+        {{- end }}
+        {{- if .Values.service.cache.password }}
+        ,"password": {{ .Values.service.cache.password | quote }}
+        {{- end }}
+        {{- if .Values.service.cache.readTimeoutMs }}
+        ,"readTimeout": {{ .Values.service.cache.readTimeoutMs }}
+        {{- end }}
+        {{- if .Values.service.cache.writeTimeoutMs }}
+        ,"writeTimeout": {{ .Values.service.cache.writeTimeoutMs }}
+        {{- end }}
+        {{- end }}
+      },
+      "pool": {
+        "size": {{ .Values.service.pool.size }},
+        "expiritySec": {{ .Values.service.pool.expiritySec }}
+      },
+      "server": {
+        "timeoutMs": {{ .Values.service.server.timeoutMs }}
+      }
+    }
+

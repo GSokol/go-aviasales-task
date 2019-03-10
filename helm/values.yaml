@@ -1,0 +1,61 @@
+helmChart:
+  debug: false
+  deployment:
+    replicas: 3
+  image:
+    registry:
+    project: gsokol/
+    pullPolicy: IfNotPresent
+  secret:
+    enabled: true
+  readinessProbe:
+    initialSeconds: 3
+    periodSeconds: 1
+    timeoutSeconds: 1
+  livenessProbe:
+    initialSeconds: 6
+    periodSeconds: 6
+    timeoutSeconds: 3
+  resources:
+    requests:
+      cpu: 50m
+      memory: 10Mi
+    limits:
+      cpu: 1000m
+      memory: 500Mi
+  ingress:
+    enabled: true
+    useLocalHttps: false
+    host: go-aviasales-task.minikube
+
+service:
+  logger:
+    level: debug
+    encoding: json
+    outputPaths:
+    - stdout
+    errorOutputPaths:
+    - stderr
+    encoderConfig:
+      messageKey: message
+      levelKey: level
+      levelEncoder: lowercase
+  client:
+    host: https://places.aviasales.ru/v2/places.json
+    timeoutMs: 2799
+  cache:
+    type: redis
+    maxIdle: 200
+    port: "6379"
+    connectTimeoutMs: 100
+    readTimeoutMs: 100
+    writeTimeoutMs: 100
+  pool:
+    size: 1000
+    expiritySec: 1
+  server:
+    timeoutMs: 3000
+
+redis:
+  enabled: true
+  existingSecret: go-aviasales-task-redis-secret

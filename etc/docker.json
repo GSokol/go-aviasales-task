@@ -1,0 +1,27 @@
+{
+  "logger": {
+    "encoderConfig":{
+      "levelEncoder":"lowercase",
+      "levelKey":"level",
+      "messageKey":"message"
+    },
+    "encoding":"json",
+    "errorOutputPaths":["stderr"],
+    "level":"debug",
+    "outputPaths":["stdout"]
+  },
+  "client": {
+    "host": "https://places.aviasales.ru/v2/places.json",
+    "timeoutMs": 2799
+  },
+  "cache": {
+    "type": "inMemory"
+  },
+  "pool": {
+    "size": 1000,
+    "expiritySec": 1
+  },
+  "server": {
+    "timeoutMs": 3000
+  }
+}

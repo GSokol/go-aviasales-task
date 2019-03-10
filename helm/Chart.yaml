@@ -1,0 +1,6 @@
+name: go-aviasales-task
+description: Aviasales task
+maintainers:
+- name: Grigorii Sokolik
+  email: g.sokol99@g-sokol.info
+engine: gotpl

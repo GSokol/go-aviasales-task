@@ -1,0 +1,21 @@
+FROM golang:1.11-stretch
+
+ENV \
+  GOPATH=/go \
+  PROJECT_ROOT=$GOPATH/src/github.com/GSokol/go-aviasales-task
+
+RUN go get -u github.com/golang/dep/cmd/dep github.com/go-delve/delve/cmd/dlv
+
+COPY ./cmd $PROJECT_ROOT/cmd
+COPY ./internal $PROJECT_ROOT/internal
+COPY ./pkg $PROJECT_ROOT/pkg
+COPY ./vendor $PROJECT_ROOT/vendor
+COPY ./Gopkg.toml $PROJECT_ROOT/Gopkg.toml
+COPY ./Gopkg.lock $PROJECT_ROOT/Gopkg.lock
+COPY ./Makefile $PROJECT_ROOT/Makefile
+
+WORKDIR "/go/src/github.com/GSokol/go-aviasales-task"
+
+RUN make
+
+CMD ["dlv", "debug", "--headless", "--listen=:2345", "--api-version=2", "--output=/tmp/debug", "./cmd/service"]

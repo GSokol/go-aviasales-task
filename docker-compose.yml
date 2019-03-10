@@ -1,0 +1,23 @@
+version: "3.2"
+
+services:
+  redis:
+    image: bitnami/redis:4.0.13
+    environment:
+    - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+    - '6379:6379'
+
+  go-aviasales-task:
+    image: gsokol/go-aviasales-task
+    build:
+      dockerfile: ./Dockerfile
+      context: .
+    environment:
+      AV_CONFIG_PATH: /etc/go-aviasales-task/compose.json
+    depends_on:
+    - redis
+    volumes:
+    - ./etc:/etc/go-aviasales-task
+    ports:
+    - '8080:8080'

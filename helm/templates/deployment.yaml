@@ -1,0 +1,120 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "go-aviasales-task.fullname" . }}
+  labels:
+    app: {{ .Chart.Name }}
+    release: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.helmChart.deployment.replicas }}
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: {{ .Chart.Name }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}
+        release: {{ .Release.Name }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum | quote }}
+        {{- if eq .Values.service.cache.type "redis" }}
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+            "name": "redis-readiness-probe",
+            "image": "busybox",
+            "command": [
+              "until nc \
+                {{ .Values.service.cache.host }} \
+                {{ .Values.service.cache.port }} \
+              ; \
+                do echo waiting for redis; \
+                sleep 2; \
+              done;"
+            ]
+          }
+        ]'
+      {{- end }}
+    spec:
+      restartPolicy: Always
+      securityContext:
+        runAsUser: 1001
+        fsGroup: 1001
+      containers:
+      - name: {{ .Chart.Name }}
+        image: {{ printf "%s%sgo-aviasales-task:%s" .Values.helmChart.image.registry .Values.helmChart.image.project .Values.helmChart.image.tag | quote}}
+        imagePullPolicy: {{ .Values.helmChart.image.pullPolicy }}
+        securityContext:
+          runAsNonRoot: true
+          readOnlyRootFilesystem: true
+        env:
+        - name: AV_CONFIG_PATH
+          value: /etc/go-aviasales-task/config.json
+        {{- if .Values.helmChart.secret.enabled }}
+        - name: CONFIG_CACHE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Chart.Name }}-redis-secret
+              key: redis-password
+        {{- end }}
+        ports:
+        - name: http
+          value: 8080
+          containerPort: 8080
+          protocol: TCP
+        - name: pprof
+          value: 18080
+          containerPort: 18080
+          protocol: TCP
+        {{- if .Values.helmChart.debug }}
+        - name: delve
+          value: 2345
+          containerPort: 2345
+          protocol: TCP
+        {{- end }}
+        {{- if not .Values.helmChart.debug }}
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          {{- toYaml .Values.helmChart.readinessProbe | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          {{- toYaml .Values.helmChart.livenessProbe | nindent 10 }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.helmChart.resources | nindent 10 }}
+        volumeMounts:
+        - name: config
+          mountPath: /etc/go-aviasales-task
+        {{- if .Values.helmChart.debug }}
+        - name: delve-config
+          mountPath: /go/src/github.com/GSokol/go-aviasales-task/.config
+        - name: tmp
+          mountPath: /tmp
+        - name: build-cache
+          mountPath: /.cache
+        - name: delve-debug
+          mountPath: /go/src/github.com/GSokol/go-aviasales-task/debug
+        {{- end }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ template "go-aviasales-task.fullname" . }}
+          items:
+          - key: configFile
+            path: config.json
+      {{- if .Values.helmChart.debug }}
+      - name: delve-config
+        emptyDir: {}
+      - name: tmp
+        emptyDir: {}
+      - name: build-cache
+        emptyDir: {}
+      - name: delve-debug
+        emptyDir: {}
+      {{- end }}
